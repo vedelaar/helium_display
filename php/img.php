@@ -1,0 +1,354 @@
+<?php
+
+class helium
+{
+  public $proxy = false;
+  public $gd;
+  public $black;
+  public $white;
+  public $gray;
+  public $font = "./LiberationSans-Bold.ttf";
+
+  public $canvas_width = 960;
+  public $canvas_height = 540;
+
+  public function __construct($w = 960, $h = 540) {
+    $this->proxy = $_SERVER["http_proxy"];
+    $this->canvas_width = $w;
+    $this->canvas_height = $h;
+    $this->gd = @imagecreate($this->canvas_width, $this->canvas_height)
+        or die("Cannot Initialize new GD image stream");
+    imageantialias($this->gd, true);
+    $this->black = imagecolorallocate($this->gd, 0, 0, 0);
+    $this->white = imagecolorallocate($this->gd, 255, 255, 255);
+    $this->gray = imagecolorallocate($this->gd, 128,128,128);
+  }
+
+  function time_elapsed_string($datetime, $full = false) {
+      $now = new DateTime;
+      $ago = new DateTime($datetime);
+      $diff = $now->diff($ago);
+
+      $diff->w = floor($diff->d / 7);
+      $diff->d -= $diff->w * 7;
+
+      $string = array(
+          'y' => 'year',
+          'm' => 'month',
+          'w' => 'week',
+          'd' => 'day',
+          'h' => 'hour',
+          'i' => 'minute',
+          's' => 'second',
+      );
+      foreach ($string as $k => &$v) {
+          if ($diff->$k) {
+              $v = $diff->$k . ' ' . $v . ($diff->$k > 1 ? 's' : '');
+          } else {
+              unset($string[$k]);
+          }
+      }
+  
+      if (!$full) $string = array_slice($string, 0, 1);
+      return $string ? implode(', ', $string) . ' ago' : 'just now';
+  }
+
+    function imagettftextSp($image, $size, $angle, $x, $y, $color, $font, $text, $spacing = 0)
+    {        
+        //if ($spacing == 0)
+        //{
+        //    imagettftext($image, $size, $angle, $x, $y, $color, $font, $text);
+        //}
+        //else
+        //{
+            $temp_x = $x;
+            $temp_y = $y;
+            for ($i = 0; $i < strlen($text); $i++)
+            {
+                imagettftext($image, $size, $angle, $temp_x, $temp_y, $color, $font, $text[$i]);
+                $bbox = imagettfbbox($size, 0, $font, $text[$i]);
+                $temp_x += cos(deg2rad($angle)) * ($spacing + ($bbox[2] - $bbox[0]));
+                $temp_y -= sin(deg2rad($angle)) * ($spacing + ($bbox[2] - $bbox[0]));
+            }
+        //}
+    }
+
+  public function getRewardsForMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
+    $date = date("Y-m-d", strtotime("+1 day"));
+    $days = 8;
+    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id."/rewards/sum?min_time=-".$days."%20day&max_time=".$date."T00%3A00%3A00.000Z&bucket=day";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, "It's-a Me, Mario!");
+    if ($this->proxy)
+        curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+    $html = curl_exec($ch);
+    curl_close($ch);
+    $decoded = json_decode($html);
+
+    usort($decoded->data, function($a, $b) {
+        return strcmp($a->timestamp, $b->timestamp);
+    });
+    return $decoded;
+  }
+
+  public function getMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
+    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, "It's-a Me, Mario!");
+    if ($this->proxy)
+        curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+    $html = curl_exec($ch);
+    curl_close($ch);
+    $decoded = json_decode($html);
+    return $decoded;
+  }
+
+  public function getWitnessedsForMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
+    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id."/witnessed";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, "It's-a Me, Mario!");
+    if ($this->proxy)
+        curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+    $html = curl_exec($ch);
+    curl_close($ch);
+    $decoded = json_decode($html);
+    return $decoded;
+  }
+
+  public function getRolesForMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", $cursor = false) {
+    if ($cursor)
+      $cursor_ = "&cursor=".$cursor;
+    else
+      $cursor_ = "";
+    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id."/roles?limit=100".$cursor_;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, "It's-a Me, Mario!");
+    if ($this->proxy)
+        curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+    $html = curl_exec($ch);
+    curl_close($ch);
+    $decoded = json_decode($html);
+    if (!$cursor)
+      $decoded = $this->getRolesForMiner($id, $decoded->cursor);
+    return $decoded;
+  }
+
+  public function getTransactionForMiner($hash, $id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
+    $url = "https://helium-api.stakejoy.com/v1/transactions/".$hash."?actor=".$id;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, "It's-a Me, Mario!");
+    if ($this->proxy)
+        curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+    $html = curl_exec($ch);
+    curl_close($ch);
+    $decoded = json_decode($html);
+    return $decoded;
+  }
+
+  public function getAmFromTransactionData($data) {
+    $am = 0;
+    if (!is_object($data) || !property_exists($data, "data")) {
+      return 0;
+    }
+    foreach($data->data->rewards as $rew) {
+      $am += $rew->amount;
+    }
+    return round($am / 100000000,3);
+  }
+
+  public function getWitnessedsFromTransactionData($data) {
+    if (!is_object($data) || !property_exists($data, "data")) {
+      return 0;
+    }
+    $valid = 0;
+    $invalid = 0;
+    foreach($data->data->path[0]->witnesses as $w) {
+      if ($w->is_valid)
+        $valid++;
+      else
+        $invalid++;
+    }
+    return ["valid"=>$valid,"invalid"=>$invalid];
+  }
+
+  public function getRolesTextByData($data, $miner, $limit = 6) {
+    $ret = array();
+    $cnt = 0;
+    foreach($data->data as $dat) {
+      $str = "";
+      $tra = $this->getTransactionForMiner($dat->hash, $miner);
+      if ($dat->role == "witness") { // Witnessed beacon
+        $str = "Witnessed beacon";
+        //$str .= " (".$this->getWitnessedsFromTransactionData($tra)["valid"].")";
+      } else if ($dat->role == "reward_gateway") { // Received mining rewards
+        $str = "Received mining rewards";
+        $str .= " (".$this->getAmFromTransactionData($tra).")";
+      } else if ($dat->role == "challenger") { // Constructed challenge | Challenged beaconer
+        $str = "Constructed challenge";
+      } else if ($dat->role == "challengee") { // Broadcast beacon
+        $str = "Broadcast beacon";
+      } else if ($dat->role == "packet_receiver") { // Transferred packets
+        $str = "Transferred packets";
+      }
+
+      if ($str) {
+        $when = $this->time_elapsed_string("@".$dat->time);
+        $ret[] = [ "text"=>$str, "when"=>$when];
+        $cnt++;
+      }
+      if ($cnt >= $limit) {
+        break;
+      }
+    }
+    return $ret;
+  }
+
+  public function getNameFromMinerData($data) {
+    return ucwords(str_replace("-", ' ', $data->data->name));
+  }
+
+  public function getAvg() {
+    $url = "https://explorer-api.helium.com/api/network/rewards/averages";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, "It's-a Me, Mario!");
+    if ($this->proxy)
+        curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+    $html = curl_exec($ch);
+    curl_close($ch);
+    $decoded = json_decode($html);
+
+    usort($decoded, function($a, $b) {
+        return strcmp($a->date, $b->date);
+    });
+    return $decoded;
+  }
+
+  public function calcHighest($miners, $avg) {
+    $max = 0;
+    foreach($miners as $miner) {
+      foreach($miner->data as $val) {
+        if ($val->total > $max)
+          $max = $val->total;
+      }
+    }
+    foreach($avg as $val) {
+      if ($val->avg_rewards > $max)
+        $max = $val->avg_rewards;
+    }
+    return $max;
+  }
+
+  public function drawBar($bot_x, $bot_y, $width, $color, $height) {
+      imagefilledarc($this->gd, $bot_x, $bot_y, $width, $width/2,  0, 180, $color, IMG_ARC_PIE);
+      imagefilledrectangle($this->gd, $bot_x-($width/2), $bot_y, $bot_x+($width/2), $bot_y-$height, $color);
+      imagefilledarc($this->gd, $bot_x, $bot_y-$height, $width, $width/2,  180, 0, $color, IMG_ARC_PIE);
+  }
+
+  public function putAmountLabels($x, $y, $color, $amount) {
+    imagettftext($this->gd, 14, 270+45, $x, $y, $color, $this->font, round($amount,3));
+  }
+  public function putTitle($x, $y, $color, $title) {
+    imagettftext($this->gd, 20, 0, $x, $y, $color, $this->font, $title);
+  }
+
+  public function drawBars($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", $y = 450) {
+    $avg = $this->getAvg();
+    $data = $this->getRewardsForMiner($id);
+    $max = $this->calcHighest([$data], $avg);
+    $im = &$this->gd;
+    $white = &$this->white;
+    $gray = &$this->gray;
+
+
+    for($i=0;$i<8;$i++) {
+      $x = $i*60 + 30;
+      $num = (int)(($data->data[$i]->total * 100)/$max);
+      $this->drawBar($x+20, $y, 20, $this->white, $num);
+      $this->putAmountLabels($x+22, $y+20, $this->white, $data->data[$i]->total);
+
+      $avgnum = count($avg) - (7-$i);
+      if (isset($avg[$avgnum])) {
+          $num = (int)($avg[$avgnum]->avg_rewards * 100)/$max;
+          $this->drawBar($x, $y, 20, $this->gray, $num);
+          $this->putAmountLabels($x-2, $y+20, $this->gray, $avg[$avgnum]->avg_rewards);
+      }
+    }
+  }
+
+  public function drawRoles($id, $y) {
+    $roles = $this->getRolesTextByData($this->getRolesForMiner($id), $id);
+    foreach($roles as $key=>$role) {
+      imagettftext($this->gd, 14, 0, 535, $y-60+($key*20), $this->white, $this->font, $role["text"]);
+      imagettftext($this->gd, 14, 0, 840, $y-60+($key*20), $this->white, $this->font, $role["when"]);
+    }
+  }
+
+  public function draw($id =  "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", $y = 450) {
+    $minerData = $this->getMiner($id);
+    $name = $this->getNameFromMinerData($minerData);
+    $witnesseds = $this->getWitnessedsForMiner($id);
+    imagettftext($this->gd, 18, 0, 550, $y-90, $this->white, $this->font, "Witnessed: ".count($witnesseds->data));
+    $this->drawRoles($id, $y);
+
+    $this->putTitle(30,$y-100-20,$this->white,$name);
+    $this->drawBars($id, $y);
+  }
+
+  public function toCppData() {
+    for($y=0; $y<$this->canvas_height; $y++) {
+      $byte = 0;
+      $done = true;
+      for($x=0; $x<$this->canvas_width; $x++) {
+        $pix = imagecolorat($this->gd, $x, $y);
+        $colors = imagecolorsforindex($this->gd, $pix);
+        $col = (($colors["red"] + $colors["green"] + $colors["blue"]) / 3) >> 4;
+        //print_r($colors);
+        //echo "$col\n";
+        if ($x%2 == 0) {
+          $byte = $col;
+          $done = false;
+        } else {
+          $byte |= ($col << 4);
+          echo pack("C",$byte);
+          //echo "0x".bin2hex(pack("C",$byte)).", ";
+          $done = true;
+        }
+      }
+      if (!$done)
+          echo pack("C",$byte);
+          //echo "0x".bin2hex(pack("C",$byte)).", ";
+      //echo "\n";
+    }
+  }
+
+  public function toImage() {
+    imagepng($this->gd, "img.png");
+    imagedestroy($this->gd);
+  }
+}
+
+
+$x = new helium();
+$x->putTitle(390,40,$x->white,"Helium tracker");
+$x->draw("112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", 200);
+$x->draw("11UYHXKndJKP13EXtZR3yPGnS7bxvBq7h6LLxfCSCTCQK9QGS8s", 450);
+
+ob_start();
+$x->toCppData();
+header("Content-length: ".ob_get_length());
+ob_end_flush();
+
+$x->toImage();
+
