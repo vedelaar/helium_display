@@ -13,7 +13,7 @@ class helium
   public $canvas_height = 540;
 
   public function __construct($w = 960, $h = 540) {
-    $this->proxy = $_SERVER["http_proxy"];
+    $this->proxy = @$_SERVER["http_proxy"];
     $this->canvas_width = $w;
     $this->canvas_height = $h;
     $this->gd = @imagecreate($this->canvas_width, $this->canvas_height)
@@ -76,7 +76,7 @@ class helium
   public function getRewardsForMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
     $date = date("Y-m-d", strtotime("+1 day"));
     $days = 8;
-    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id."/rewards/sum?min_time=-".$days."%20day&max_time=".$date."T00%3A00%3A00.000Z&bucket=day";
+    $url = "https://api.helium.io/v1/hotspots/".$id."/rewards/sum?min_time=-".$days."%20day&max_time=".$date."T00%3A00%3A00.000Z&bucket=day";
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL,$url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -94,7 +94,7 @@ class helium
   }
 
   public function getMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
-    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id;
+    $url = "https://api.helium.io/v1/hotspots/".$id;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL,$url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -104,11 +104,12 @@ class helium
     $html = curl_exec($ch);
     curl_close($ch);
     $decoded = json_decode($html);
+    //print_r($decoded);
     return $decoded;
   }
 
   public function getWitnessedsForMiner($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
-    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id."/witnessed";
+    $url = "https://api.helium.io/v1/hotspots/".$id."/witnessed";
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL,$url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -126,7 +127,7 @@ class helium
       $cursor_ = "&cursor=".$cursor;
     else
       $cursor_ = "";
-    $url = "https://helium-api.stakejoy.com/v1/hotspots/".$id."/roles?limit=100".$cursor_;
+    $url = "https://api.helium.io/v1/hotspots/".$id."/roles?limit=100".$cursor_;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL,$url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -142,7 +143,7 @@ class helium
   }
 
   public function getTransactionForMiner($hash, $id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6") {
-    $url = "https://helium-api.stakejoy.com/v1/transactions/".$hash."?actor=".$id;
+    $url = "https://api.helium.io/v1/transactions/".$hash."?actor=".$id;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL,$url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -232,7 +233,13 @@ class helium
     usort($decoded, function($a, $b) {
         return strcmp($a->date, $b->date);
     });
-    return $decoded;
+
+    $newarr = [];
+    $am = 7;
+    for($i=30-$am; $i<=30; $i++){
+      $newarr[] = $decoded[$i];
+    }
+    return $newarr;
   }
 
   public function calcHighest($miners, $avg) {
@@ -256,11 +263,11 @@ class helium
       imagefilledarc($this->gd, $bot_x, $bot_y-$height, $width, $width/2,  180, 0, $color, IMG_ARC_PIE);
   }
 
-  public function putAmountLabels($x, $y, $color, $amount) {
-    imagettftext($this->gd, 14, 270+45, $x, $y, $color, $this->font, round($amount,3));
+  public function putAmountLabels($x, $y, $color, $amount, $size = 14, $angle = 315) {
+    imagettftext($this->gd, $size, $angle, $x, $y, $color, $this->font, round($amount,3));
   }
-  public function putTitle($x, $y, $color, $title) {
-    imagettftext($this->gd, 20, 0, $x, $y, $color, $this->font, $title);
+  public function putTitle($x, $y, $color, $title, $size = 20) {
+    imagettftext($this->gd, $size, 0, $x, $y, $color, $this->font, $title);
   }
 
   public function drawBars($id = "112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", $y = 450) {
@@ -287,6 +294,32 @@ class helium
     }
   }
 
+  public function drawBars2($id) {
+    $y = 430;
+    $avg = $this->getAvg();
+    $data = $this->getRewardsForMiner($id);
+    $max = $this->calcHighest([$data], $avg);
+    $im = &$this->gd;
+    $white = &$this->white;
+    $gray = &$this->gray;
+
+    for($i=0;$i<8;$i++) {
+      $barmult = 3.5;
+      $barw = 46;
+      $x = $i*(20+$barw+$barw) + 30;
+      $num = (int)(($data->data[$i]->total * 100)/$max);
+      $this->drawBar($x+$barw, $y, $barw, $this->white, $num*$barmult);
+      $this->putAmountLabels($x+$barw+2, $y+30, $this->white, $data->data[$i]->total, 28,320);
+
+      $avgnum = count($avg) - (7-$i);
+      if (isset($avg[$avgnum])) {
+          $num = (int)($avg[$avgnum]->avg_rewards * 100)/$max;
+          $this->drawBar($x, $y, $barw, $this->gray, $num*$barmult);
+          $this->putAmountLabels($x-2, $y+30, $this->gray, $avg[$avgnum]->avg_rewards,28,320);
+      }
+    }
+  }
+
   public function drawRoles($id, $y) {
     $roles = $this->getRolesTextByData($this->getRolesForMiner($id), $id);
     foreach($roles as $key=>$role) {
@@ -304,6 +337,25 @@ class helium
 
     $this->putTitle(30,$y-100-20,$this->white,$name);
     $this->drawBars($id, $y);
+
+    $this->putTitle(390,40,$x->white,"Helium tracker");
+  }
+
+  public function putRewardScale($x, $y, $color, $minerData, $size) {
+    $rs = round($minerData->data->reward_scale,2);
+    imagettftext($this->gd, $size, 0, $x, $y, $color, $this->font, "rs: ".$rs);
+  }
+
+  public function getRewardScaleFromMinerData($minerData) {
+    return $minerData->data->reward_scale;
+  }
+
+  public function draw2($id) {
+    $minerData = $this->getMiner($id);
+    $name = $this->getNameFromMinerData($minerData);
+    $this->putTitle      (30,40,$this->white,$name,30);
+    $this->putRewardScale(730,40,$this->white,$minerData,30);
+    $this->drawBars2($id);
   }
 
   public function toCppData() {
@@ -341,9 +393,8 @@ class helium
 
 
 $x = new helium();
-$x->putTitle(390,40,$x->white,"Helium tracker");
-$x->draw("112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", 200);
-$x->draw("11UYHXKndJKP13EXtZR3yPGnS7bxvBq7h6LLxfCSCTCQK9QGS8s", 450);
+$x->draw2("112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6");
+//$x->draw("11UYHXKndJKP13EXtZR3yPGnS7bxvBq7h6LLxfCSCTCQK9QGS8s", 450);
 
 ob_start();
 $x->toCppData();
