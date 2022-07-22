@@ -343,7 +343,7 @@ class helium
 
   public function putRewardScale($x, $y, $color, $minerData, $size) {
     $rs = round($minerData->data->reward_scale,2);
-    imagettftext($this->gd, $size, 0, $x, $y, $color, $this->font, "rs: ".$rs);
+    imagettftext($this->gd, $size, 0, $x, $y, $color, $this->font, "ts: ".$rs);
   }
 
   public function getRewardScaleFromMinerData($minerData) {
