@@ -412,7 +412,7 @@ class helium
 
     $minerData2 = $this->getMiner($id2);
     $name2 = $this->getSingleNameFromMinerData($minerData2);
-    $ts2 = round($minerData1->data->reward_scale,2);
+    $ts2 = round($minerData2->data->reward_scale,2);
     $miner2titletext = "ts: ".$ts2.' '.$name2;
     $textsize = $this->calculateTextBox($miner2titletext, $this->font, 30, 0);
     $this->putTitle(960-30-$textsize['width'],40,$this->gray,$miner2titletext,30);
