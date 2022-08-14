@@ -278,7 +278,6 @@ class helium
     $white = &$this->white;
     $gray = &$this->gray;
 
-
     for($i=0;$i<8;$i++) {
       $x = $i*60 + 30;
       $num = (int)(($data->data[$i]->total * 100)/$max);
@@ -307,14 +306,14 @@ class helium
       $barmult = 3.5;
       $barw = 46;
       $x = $i*(20+$barw+$barw) + 30;
-      $num = (int)(($data->data[$i]->total * 100)/$max);
-      $this->drawBar($x+$barw, $y, $barw, $this->white, $num*$barmult);
+      $num = (($data->data[$i]->total * 100)/$max);
+      $this->drawBar($x+$barw, $y, $barw, $this->white, round($num*$barmult));
       $this->putAmountLabels($x+$barw+2, $y+30, $this->white, $data->data[$i]->total, 28,320);
 
       $avgnum = count($avg) - (7-$i);
       if (isset($avg[$avgnum])) {
-          $num = (int)($avg[$avgnum]->avg_rewards * 100)/$max;
-          $this->drawBar($x, $y, $barw, $this->gray, $num*$barmult);
+          $num = ($avg[$avgnum]->avg_rewards * 100)/$max;
+          $this->drawBar($x, $y, $barw, $this->gray, round($num*$barmult));
           $this->putAmountLabels($x-2, $y+30, $this->gray, $avg[$avgnum]->avg_rewards,28,320);
       }
     }
