@@ -218,11 +218,6 @@ class helium
     return ucwords(str_replace("-", ' ', $data->data->name));
   }
 
-  public function getSingleNameFromMinerData($data) {
-    $arr = explode(' ', $this->getNameFromMinerData($data));
-    return end($arr);
-  }
-
   public function getAvg() {
     $url = "https://explorer-api.helium.com/api/network/rewards/averages";
     $ch = curl_init();
@@ -324,47 +319,6 @@ class helium
     }
   }
 
-  public function drawBars3($id1, $id2) {
-    $y = 430;
-    $avg = $this->getAvg();
-    $data1 = $this->getRewardsForMiner($id1);
-    $data2 = $this->getRewardsForMiner($id2);
-    $max = $this->calcHighest([$data1, $data2], $avg);
-    $im = &$this->gd;
-    $white = &$this->white;
-    $gray = &$this->gray;
-
-    $prevx = -1;
-    $prevy = -1;
-    for($i=0;$i<8;$i++) {
-      $barmult = 3.5;
-      $barw = 46;
-      $x = $i*(20+$barw+$barw) + 30;
-
-      $num1 = (($data1->data[$i]->total * 100)/$max);
-      $this->drawBar($x, $y, $barw, $this->white, round($num1*$barmult));
-      $this->putAmountLabels($x-2, $y+30, $this->white, $data1->data[$i]->total, 28,320);
-
-      $num2 = (($data2->data[$i]->total * 100)/$max);
-      $this->drawBar($x+$barw, $y, $barw, $this->gray, round($num2*$barmult));
-      $this->putAmountLabels($x+$barw+2, $y+30, $this->gray, $data2->data[$i]->total, 28,320);
-
-      $avgnum = count($avg) - (7-$i);
-      if (isset($avg[$avgnum])) {
-          $num = ($avg[$avgnum]->avg_rewards * 100)/$max;
-          //$this->drawBar($x, $y, $barw, $this->gray, round($num*$barmult));
-          $color = ($num1>$num)? $this->gray : $this->white;
-          imageline($this->gd, $x-($barw/2), $y-round($num*$barmult), $x+$barw-($barw/2), $y-round($num*$barmult), $color);
-          imageline($this->gd, $x-($barw/2)+$barw, $y-round($num*$barmult), $x+$barw+$barw-($barw/2), $y-round($num*$barmult), $this->white);
-          if ($prevx != -1) {
-              imageline($this->gd, $prevx, $prevy, $x-($barw/2), $y-round($num*$barmult), $this->white);
-          }
-          $prevx = $x+$barw+$barw-($barw/2);
-          $prevy = $y-round($num*$barmult);
-      }
-    }
-  }
-
   public function drawRoles($id, $y) {
     $roles = $this->getRolesTextByData($this->getRolesForMiner($id), $id);
     foreach($roles as $key=>$role) {
@@ -403,44 +357,6 @@ class helium
     $this->drawBars2($id);
   }
 
-  public function draw3($id1, $id2) {
-    $minerData1 = $this->getMiner($id1);
-    $name1 = $this->getSingleNameFromMinerData($minerData1);
-    $ts1 = round($minerData1->data->reward_scale,2);
-    $this->putTitle(30,40,$this->white,$name1." ts: ".$ts1,30);
-
-    $minerData2 = $this->getMiner($id2);
-    $name2 = $this->getSingleNameFromMinerData($minerData2);
-    $ts2 = round($minerData1->data->reward_scale,2);
-    $miner2titletext = "ts: ".$ts2.' '.$name2;
-    $textsize = $this->calculateTextBox($miner2titletext, $this->font, 30, 0);
-    $this->putTitle(960-30-$textsize['width'],40,$this->gray,$miner2titletext,30);
-    $this->drawBars3($id1, $id2);
-  }
-
-// https://www.php.net/manual/en/function.imagettfbbox.php
-public function calculateTextBox($text,$fontFile,$fontSize,$fontAngle) {
-    /************
-    simple function that calculates the *exact* bounding box (single pixel precision).
-    The function returns an associative array with these keys:
-    left, top:  coordinates you will pass to imagettftext
-    width, height: dimension of the image you have to create
-    *************/
-    $rect = imagettfbbox($fontSize,$fontAngle,$fontFile,$text);
-    $minX = min(array($rect[0],$rect[2],$rect[4],$rect[6]));
-    $maxX = max(array($rect[0],$rect[2],$rect[4],$rect[6]));
-    $minY = min(array($rect[1],$rect[3],$rect[5],$rect[7]));
-    $maxY = max(array($rect[1],$rect[3],$rect[5],$rect[7]));
-   
-    return array(
-     "left"   => abs($minX) - 1,
-     "top"    => abs($minY) - 1,
-     "width"  => $maxX - $minX,
-     "height" => $maxY - $minY,
-     "box"    => $rect
-    );
-}
-
   public function toCppData() {
     for($y=0; $y<$this->canvas_height; $y++) {
       $byte = 0;
@@ -476,8 +392,7 @@ public function calculateTextBox($text,$fontFile,$fontSize,$fontAngle) {
 
 
 $x = new helium();
-$x->draw3("112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6", "11xY7iccN7GLb2FaymovJLFW5MPT1GBoSDYGHpr2ncVHt5MvDqW");
-//$x->draw2("112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6");
+$x->draw2("112Ba7ybtoxxa1n5mVFcFfvyyUwwgyZt9FEDgS7np9QQt8q5k7k6");
 //$x->draw("11UYHXKndJKP13EXtZR3yPGnS7bxvBq7h6LLxfCSCTCQK9QGS8s", 450);
 
 ob_start();
