@@ -354,11 +354,12 @@ class helium
           $num = ($avg[$avgnum]->avg_rewards * 100)/$max;
           //$this->drawBar($x, $y, $barw, $this->gray, round($num*$barmult));
           $color = ($num1>$num)? $this->gray : $this->white;
-          imageline($this->gd, $x-($barw/2), $y-round($num*$barmult), $x+$barw-($barw/2), $y-round($num*$barmult), $color);
-          imageline($this->gd, $x-($barw/2)+$barw, $y-round($num*$barmult), $x+$barw+$barw-($barw/2), $y-round($num*$barmult), $this->white);
-          if ($prevx != -1) {
-              imageline($this->gd, $prevx, $prevy, $x-($barw/2), $y-round($num*$barmult), $this->white);
-          }
+          $am = 2;
+          imagefilledrectangle($this->gd, $x-($barw/2), $y-round($num*$barmult)-$am, $x+$barw-($barw/2), $y-round($num*$barmult)+$am, $color);
+          imagefilledrectangle($this->gd, $x-($barw/2)+$barw, $y-round($num*$barmult)-$am, $x+$barw+$barw-($barw/2), $y-round($num*$barmult)+$am, $this->white);
+          //if ($prevx != -1) {
+          //    imageline($this->gd, $prevx, $prevy, $x-($barw/2), $y-round($num*$barmult), $this->white);
+          //}
           $prevx = $x+$barw+$barw-($barw/2);
           $prevy = $y-round($num*$barmult);
       }
