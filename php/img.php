@@ -21,7 +21,7 @@ class helium
     imageantialias($this->gd, true);
     $this->black = imagecolorallocate($this->gd, 0, 0, 0);
     $this->white = imagecolorallocate($this->gd, 255, 255, 255);
-    $this->gray = imagecolorallocate($this->gd, 128,128,128);
+    $this->gray = imagecolorallocate($this->gd, 148,148,148);
   }
 
   function time_elapsed_string($datetime, $full = false) {
